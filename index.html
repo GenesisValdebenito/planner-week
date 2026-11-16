@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Semana - Planificador Semanal Editable</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Patrick+Hand&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="min-h-screen flex flex-col items-center pb-10">
+
+    <!-- Barra superior discreta de herramientas -->
+    <div class="no-print sticky top-0 z-50 w-full bg-white/95 backdrop-blur-md border-b border-stone-200 shadow-xs px-4 py-2 mb-4">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+                <img src="favicon.svg" alt="Icono Planner" class="w-5 h-5">
+                <span class="font-bold text-stone-700 text-xs sm:text-sm">Planificador Semanal — Mi Semana</span>
+                <span id="save-status" class="text-[11px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-medium transition-opacity duration-300">
+                    ✓ Guardado automático
+                </span>
+            </div>
+            
+            <div class="flex flex-wrap items-center gap-2">
+                <button onclick="exportBackupJSON()" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-300 transition cursor-pointer">
+                    💾 Exportar JSON
+                </button>
+                <label class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-300 transition cursor-pointer">
+                    📂 Importar JSON
+                    <input type="file" accept=".json" onchange="importBackupJSON(event)" class="hidden">
+                </label>
+                <button onclick="openConfirmModal('clear')" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 transition cursor-pointer">
+                    🗑️ Limpiar Hoja
+                </button>
+                <button onclick="window.print()" class="px-3.5 py-1.5 text-xs font-semibold rounded-lg bg-[#3b3835] hover:bg-black text-white shadow-xs transition cursor-pointer flex items-center gap-1.5">
+                    🖨️ Imprimir / PDF (Carta)
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contenedor Principal del Organizador -->
+    <div class="planner-wrapper w-full max-w-[1240px] px-2 sm:px-3">
+        <div id="planner" class="planner-sheet rounded-xl p-3 sm:p-4">
+
+            <!-- Hojitas otoñales decorativas en el borde superior -->
+            <svg class="absolute top-2 left-10 w-5 h-5 opacity-85 pointer-events-none" viewBox="0 0 40 40">
+                <path d="M8 32 C10 15, 25 8, 34 6 C32 18, 25 30, 8 32 Z" fill="#7c8f56" stroke="#4a4640" stroke-width="1.5"/>
+                <path d="M8 32 L26 14" stroke="#4a4640" stroke-width="1.2"/>
+            </svg>
+            <svg class="absolute top-1.5 left-60 w-4 h-4 opacity-85 pointer-events-none rotate-45" viewBox="0 0 40 40">
+                <path d="M20 4 C26 12, 34 14, 32 22 C30 28, 22 32, 20 36 C18 32, 10 28, 8 22 C6 14, 14 12, 20 4 Z" fill="#c97e5d" stroke="#4a4640" stroke-width="1.5"/>
+            </svg>
+            <svg class="absolute top-2 right-64 w-4 h-4 opacity-85 pointer-events-none -rotate-12" viewBox="0 0 40 40">
+                <path d="M20 4 C26 12, 34 14, 32 22 C30 28, 22 32, 20 36 C18 32, 10 28, 8 22 C6 14, 14 12, 20 4 Z" fill="#c97e5d" stroke="#4a4640" stroke-width="1.5"/>
+            </svg>
+            <svg class="absolute top-2 right-40 w-5 h-5 opacity-85 pointer-events-none rotate-12" viewBox="0 0 40 40">
+                <path d="M8 32 C10 15, 25 8, 34 6 C32 18, 25 30, 8 32 Z" fill="#a88b4c" stroke="#4a4640" stroke-width="1.5"/>
+            </svg>
+
+            <!-- ENCABEZADO SUPERIOR -->
+            <header class="relative flex flex-col md:flex-row items-center justify-between mb-2.5 gap-2">
+                <!-- Recuadro MES -->
+                <div class="flex items-center bg-[#b4ced8]/90 px-3 py-1 rounded-md border border-white/50 shadow-2xs w-full md:w-auto">
+                    <span class="font-bold text-[11px] tracking-wider text-[#3b3835] mr-2">MES:</span>
+                    <div id="field-mes" contenteditable="true" data-placeholder="Mes y año..." class="editable-field font-hand text-base text-[#2c2a28] min-w-[130px] flex-1"></div>
+                </div>
+
+                <!-- Título Central con Nubes Blancas Ilustradas -->
+                <div class="flex items-center justify-center gap-3 sm:gap-4 text-center">
+                    <svg class="w-10 h-6 sm:w-14 sm:h-8 text-[#f5f4f0] drop-shadow-2xs hidden sm:block" viewBox="0 0 100 60" fill="currentColor">
+                        <path d="M25,50 L75,50 C86,50 95,41 95,30 C95,20 87,12 77,11 C73,4 65,0 56,0 C45,0 36,7 33,17 C29,15 24,14 20,15 C10,17 4,26 5,36 C6,44 15,50 25,50 Z"/>
+                    </svg>
+
+                    <div>
+                        <h1 class="font-script text-3xl sm:text-4xl font-bold text-[#3b3835] tracking-wide leading-none drop-shadow-[0_1.5px_0_rgba(255,255,255,0.85)]">
+                            Mi Semana
+                        </h1>
+                        <p class="text-[9px] sm:text-[10px] font-bold tracking-[0.2em] text-[#f4f7f8] uppercase mt-0.5 drop-shadow-2xs">
+                            ¡VAMOS POR UNA SEMANA GENIAL!
+                        </p>
+                    </div>
+
+                    <svg class="w-10 h-6 sm:w-14 sm:h-8 text-[#f5f4f0] drop-shadow-2xs hidden sm:block" viewBox="0 0 100 60" fill="currentColor">
+                        <path d="M22,50 L78,50 C89,50 97,42 96,31 C95,21 86,14 76,15 C72,6 62,1 52,2 C41,3 33,11 31,21 C26,18 20,18 15,21 C7,25 4,35 9,43 C12,48 17,50 22,50 Z"/>
+                    </svg>
+                </div>
+
+                <!-- Recuadro SEMANA editable -->
+                <div class="hidden md:flex items-center bg-white/45 px-3 py-1 rounded-md border border-white/50 shadow-2xs">
+                    <span class="font-bold text-[10px] tracking-wider text-[#3b3835] mr-1.5">SEMANA:</span>
+                    <div id="field-semana" contenteditable="true" data-placeholder="Del __ al __..." class="editable-field font-hand text-sm text-[#2c2a28] min-w-[115px]"></div>
+                </div>
+            </header>
+
+            <!-- ESTRUCTURA PRINCIPAL -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-2.5">
+
+                <!-- COLUMNA IZQUIERDA (9 cols): Lunes a Viernes + Objetivo + Sábado/Domingo/Llamar -->
+                <div class="lg:col-span-9 flex flex-col gap-2.5">
+
+                    <!-- GRILLA DE 5 COLUMNAS: LUNES A VIERNES -->
+                    <div class="bg-[#f7f6f2] rounded-xl shadow-xs border border-[#e0dcd3] grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 divide-y md:divide-y-0 md:divide-x divide-[#d6d1c8] overflow-hidden">
+                        <div id="weekdays-container" class="contents"></div>
+                    </div>
+
+                    <!-- FRANJA HORIZONTAL AMARILLA: OBJETIVO DE LA SEMANA -->
+                    <div class="bg-[#e4cd7c] rounded-lg px-3 py-1.5 shadow-xs border border-[#d1b862] flex flex-col sm:flex-row sm:items-center gap-2">
+                        <svg class="w-4 h-4 text-[#6f8554] flex-shrink-0 hidden sm:block" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M17,8C8,10 5.9,16.17 3.82,21.34L5.71,22L6.66,19.7C7.14,19.87 7.64,20 8,20C19,20 22,3 22,3C21,5 14,5.25 9,6.25C4,7.25 2,11.5 2,13.5C2,15.5 3.75,17.25 3.75,17.25C7,8 17,8 17,8Z"/>
+                        </svg>
+                        <span class="font-script text-xl font-bold text-[#3b3835] whitespace-nowrap leading-none">
+                            Objetivo de la semana
+                        </span>
+                        <div id="field-objetivo" contenteditable="true" data-placeholder="Escribe tu objetivo principal de la semana..." class="editable-field font-hand text-sm sm:text-base text-[#2b2927] flex-1 px-2 py-0.5 leading-snug"></div>
+                    </div>
+
+                    <!-- FILA INFERIOR: SÁBADO, DOMINGO Y LLAMAR -->
+                    <div class="bg-[#f7f6f2] rounded-xl shadow-xs border border-[#e0dcd3] grid grid-cols-1 md:grid-cols-12 divide-y md:divide-y-0 md:divide-x divide-dashed divide-[#b8b3aa] relative overflow-visible">
+                        
+                        <!-- SÁBADO -->
+                        <div class="md:col-span-4 p-2.5 flex flex-col justify-between min-h-[140px]">
+                            <div>
+                                <div class="flex items-center gap-1.5 mb-1">
+                                    <span class="w-3.5 h-3.5 rounded-full bg-[#e39c93] inline-block flex-shrink-0"></span>
+                                    <h3 class="font-bold text-[11px] tracking-wider uppercase text-[#3b3835]">SÁBADO</h3>
+                                </div>
+                                <div id="notes-sabado" contenteditable="true" data-placeholder="Notas de sábado..." class="editable-field font-hand text-[13px] text-[#3b3835] min-h-[75px] p-1 leading-snug"></div>
+                            </div>
+                            <div class="mt-1 flex flex-col items-center">
+                                <span class="text-[8px] font-bold tracking-wider uppercase text-[#5c5852] mb-0.5">MI ÁNIMO:</span>
+                                <div class="flex items-center gap-1" data-mood-day="sabado"></div>
+                            </div>
+                        </div>
+
+                        <!-- DOMINGO -->
+                        <div class="md:col-span-4 p-2.5 flex flex-col justify-between min-h-[140px]">
+                            <div>
+                                <div class="flex items-center gap-1.5 mb-1">
+                                    <span class="w-3.5 h-3.5 rounded-full bg-[#e8aba2] inline-block flex-shrink-0"></span>
+                                    <h3 class="font-bold text-[11px] tracking-wider uppercase text-[#3b3835]">DOMINGO</h3>
+                                </div>
+                                <div id="notes-domingo" contenteditable="true" data-placeholder="Notas de domingo..." class="editable-field font-hand text-[13px] text-[#3b3835] min-h-[75px] p-1 leading-snug"></div>
+                            </div>
+                            <div class="mt-1 flex flex-col items-center">
+                                <span class="text-[8px] font-bold tracking-wider uppercase text-[#5c5852] mb-0.5">MI ÁNIMO:</span>
+                                <div class="flex items-center gap-1" data-mood-day="domingo"></div>
+                            </div>
+                        </div>
+
+                        <!-- LLAMAR + ILUSTRACIÓN MOTIVACIONAL -->
+                        <div class="md:col-span-4 p-2.5 relative min-h-[140px] flex flex-col justify-between">
+                            <div class="pr-20 sm:pr-24">
+                                <h3 class="font-hand text-base font-bold tracking-wide uppercase text-[#3b3835] mb-0.5">
+                                    LLAMAR:
+                                </h3>
+                                <div id="field-llamar" contenteditable="true" data-placeholder="Contactos o mensajes..." class="editable-field font-hand text-[13px] text-[#3b3835] min-h-[85px] p-1 leading-snug"></div>
+                            </div>
+
+                            <!-- Globo de diálogo + Chica Chibi celebrando -->
+                            <div class="absolute bottom-0 right-1 sm:right-2 pointer-events-none flex flex-col items-end">
+                                <div class="bg-[#f7f6f2] border-2 border-[#4a4640] rounded-2xl px-1.5 py-0.5 mb-0.5 mr-2 shadow-2xs relative">
+                                    <p class="font-hand text-[9px] sm:text-[10px] font-bold leading-tight text-center text-[#3b3835]">
+                                        ¡VOY A ALCANZAR<br>A HACER TODO!
+                                    </p>
+                                    <div class="w-1.5 h-1.5 bg-[#f7f6f2] border-r-2 border-b-2 border-[#4a4640] rotate-45 absolute -bottom-1 left-5"></div>
+                                </div>
+
+                                <svg class="w-20 h-24 sm:w-24 sm:h-26 overflow-visible" viewBox="0 0 140 160">
+                                    <line x1="15" y1="70" x2="32" y2="75" stroke="#4a4640" stroke-width="1.5" stroke-linecap="round"/>
+                                    <line x1="10" y1="90" x2="30" y2="90" stroke="#4a4640" stroke-width="1.5" stroke-linecap="round"/>
+                                    <line x1="115" y1="65" x2="132" y2="58" stroke="#4a4640" stroke-width="1.5" stroke-linecap="round"/>
+                                    <line x1="118" y1="88" x2="135" y2="88" stroke="#4a4640" stroke-width="1.5" stroke-linecap="round"/>
+                                    <path d="M92 92 L112 45 L103 41 L82 85 Z" fill="#e6a15c" stroke="#3b3835" stroke-width="2" stroke-linejoin="round"/>
+                                    <circle cx="109" cy="40" r="6.5" fill="#f7d3ba" stroke="#3b3835" stroke-width="2"/>
+                                    <circle cx="72" cy="24" r="14" fill="#7d5338" stroke="#3b3835" stroke-width="2"/>
+                                    <path d="M62 34 Q72 28 82 34" fill="none" stroke="#df9e96" stroke-width="3.5" stroke-linecap="round"/>
+                                    <path d="M44 58 C40 72, 46 82, 54 80 L90 80 C98 82, 102 70, 96 56 Z" fill="#7d5338" stroke="#3b3835" stroke-width="2"/>
+                                    <ellipse cx="70" cy="56" rx="22" ry="20" fill="#f7d3ba" stroke="#3b3835" stroke-width="2"/>
+                                    <path d="M48 54 C48 36, 92 36, 92 54 C86 46, 78 45, 72 52 C66 45, 56 46, 48 54 Z" fill="#7d5338" stroke="#3b3835" stroke-width="2" stroke-linejoin="round"/>
+                                    <path d="M57 56 Q61 51 65 56" fill="none" stroke="#3b3835" stroke-width="2" stroke-linecap="round"/>
+                                    <path d="M75 56 Q79 51 83 56" fill="none" stroke="#3b3835" stroke-width="2" stroke-linecap="round"/>
+                                    <ellipse cx="55" cy="61" rx="3.5" ry="2" fill="#e88d84" opacity="0.7"/>
+                                    <ellipse cx="85" cy="61" rx="3.5" ry="2" fill="#e88d84" opacity="0.7"/>
+                                    <path d="M64 63 Q70 74 76 63 Z" fill="#d96b6b" stroke="#3b3835" stroke-width="1.8" stroke-linejoin="round"/>
+                                    <path d="M50 82 L90 82 L98 148 L42 148 Z" fill="#e6a15c" stroke="#3b3835" stroke-width="2" stroke-linejoin="round"/>
+                                    <path d="M54 82 L54 102 L86 102 L86 82 L92 82 L96 148 L44 148 L48 82 Z" fill="#4f7c54" stroke="#3b3835" stroke-width="2" stroke-linejoin="round"/>
+                                    <circle cx="56" cy="102" r="2.2" fill="#e2cc7b"/>
+                                    <circle cx="84" cy="102" r="2.2" fill="#e2cc7b"/>
+                                    <line x1="86" y1="84" x2="46" y2="122" stroke="#3b3835" stroke-width="3"/>
+                                    <rect x="30" y="116" width="26" height="22" rx="6" fill="#d46a76" stroke="#3b3835" stroke-width="2" transform="rotate(-10 43 127)"/>
+                                    <path d="M31 122 Q43 130 55 120" fill="none" stroke="#3b3835" stroke-width="1.8"/>
+                                </svg>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- COLUMNA DERECHA (3 cols): IMPORTANTE + NO OLVIDAR -->
+                <div class="lg:col-span-3 flex flex-col gap-2.5">
+
+                    <!-- BLOQUE POST-IT AMARILLO CON CHINCHETA: IMPORTANTE -->
+                    <div class="bg-[#e4cd7c] rounded-xl p-3 shadow-xs border border-[#d1b862] relative">
+                        <svg class="w-6 h-6 absolute -top-3 right-6 drop-shadow-2xs pointer-events-none" viewBox="0 0 36 36">
+                            <line x1="18" y1="22" x2="18" y2="33" stroke="#5c5852" stroke-width="2.2" stroke-linecap="round"/>
+                            <ellipse cx="18" cy="21" rx="9" ry="4" fill="#d96b6b" stroke="#3b3835" stroke-width="1.5"/>
+                            <rect x="13" y="11" width="10" height="10" rx="2" fill="#e38282" stroke="#3b3835" stroke-width="1.5"/>
+                            <ellipse cx="18" cy="11" rx="7" ry="3.2" fill="#eb9b9b" stroke="#3b3835" stroke-width="1.5"/>
+                        </svg>
+
+                        <h2 class="font-hand text-lg font-bold tracking-wider uppercase text-center text-[#3b3835] mb-1">
+                            IMPORTANTE
+                        </h2>
+                        <div id="field-importante" contenteditable="true" data-placeholder="Prioridades clave..." class="editable-field lined-yellow font-hand text-[13.5px] text-[#2c2a28] min-h-[138px] px-1"></div>
+                    </div>
+
+                    <!-- BLOQUE NUBE BLANCA: NO OLVIDAR -->
+                    <div class="bg-[#f5f4f0] rounded-[24px] p-3 shadow-xs border-2 border-white flex-1 flex flex-col relative">
+                        <div class="flex justify-center gap-1 -mt-6 mb-1 pointer-events-none">
+                            <div class="w-8 h-4 bg-[#f5f4f0] rounded-t-full border-t-2 border-white"></div>
+                            <div class="w-12 h-5 bg-[#f5f4f0] rounded-t-full border-t-2 border-white -mt-1"></div>
+                            <div class="w-8 h-4 bg-[#f5f4f0] rounded-t-full border-t-2 border-white"></div>
+                        </div>
+
+                        <svg class="w-4 h-4 absolute top-5 -left-2 opacity-85 pointer-events-none -rotate-45" viewBox="0 0 40 40">
+                            <path d="M8 32 C10 15, 25 8, 34 6 C32 18, 25 30, 8 32 Z" fill="#7c8f56" stroke="#4a4640" stroke-width="1.5"/>
+                        </svg>
+                        <svg class="w-4 h-4 absolute bottom-6 -right-1.5 opacity-85 pointer-events-none rotate-12" viewBox="0 0 40 40">
+                            <path d="M20 4 C26 12, 34 14, 32 22 C30 28, 22 32, 20 36 C18 32, 10 28, 8 22 C6 14, 14 12, 20 4 Z" fill="#c97e5d" stroke="#4a4640" stroke-width="1.5"/>
+                        </svg>
+
+                        <h2 class="font-hand text-lg font-bold tracking-wider uppercase text-center text-[#3b3835] mb-1">
+                            NO OLVIDAR
+                        </h2>
+
+                        <div id="field-no-olvidar" contenteditable="true" data-placeholder="Recordatorios pendientes..." class="editable-field font-hand text-[13.5px] text-[#3b3835] flex-1 min-h-[200px] p-1 leading-snug"></div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Confirmación Personalizado -->
+    <div id="confirm-modal" class="no-print fixed inset-0 bg-black/40 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-xl border border-stone-100 text-center">
+            <div class="w-12 h-12 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto mb-3 text-xl">
+                🧹
+            </div>
+            <h3 class="text-lg font-bold text-stone-800 mb-1">¿Limpiar toda la hoja?</h3>
+            <p class="text-sm text-stone-500 mb-5">Se dejarán todas las viñetas, líneas y recuadros en blanco para que organices una nueva semana desde cero.</p>
+            <div class="flex gap-2.5 justify-center">
+                <button onclick="closeConfirmModal()" class="flex-1 py-2 px-4 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold text-sm transition cursor-pointer">
+                    Cancelar
+                </button>
+                <button id="modal-confirm-btn" class="flex-1 py-2 px-4 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-sm transition cursor-pointer">
+                    Sí, limpiar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
